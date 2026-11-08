@@ -14,9 +14,16 @@ Enhanced with neuromorphic sentinel and recursive weight integration:
 - Neuromorphic sentinels for adaptive state monitoring
 - Recursive weights with Ramanujan τ multipliers
 - Integration with Ouroboros Virtual Processor functional manifold
+
+Also keeps the simplified classical register from the core-improvements
+version: per-qubit gates, entangle(), reset(), get_state_vector() and
+quantum_random_number(). measure() with no argument samples the active
+profile's Hamiltonian state; measure(i) reads qubit i of the register.
 """
 
-from quantum_profiles import QuantumProfileManager
+# QuantumProfileManager is imported inside QuantumVirtualProcessor.__init__,
+# not here: quantum_profiles imports this module (its processors subclass
+# QuantumVirtualProcessor), so a module-level import would be circular.
 
 # Modular integration for ouroboros components
 try:
@@ -33,78 +40,7 @@ except ImportError:
 import random
 import math
 
-class QuantumVirtualProcessor:
-    def __init__(self, qubits=6):
-        self.qubits = qubits
-        # Initialize quantum state (simplified simulation)
-        # In reality, this would be a complex amplitude vector
-        self.state = [0] * qubits  # Classical representation
-        self.measurement_history = []
-        
-    def apply_gate(self, gate, qubit_index):
-        """Apply quantum operation to specified qubit"""
-        if qubit_index >= self.qubits:
-            raise ValueError(f"Qubit index {qubit_index} out of range (max: {self.qubits-1})")
-        
-        gate = gate.upper()
-        
-        if gate == 'H':  # Hadamard: creates superposition
-            # Simplified: randomly set to 0 or 1 (50/50 chance)
-            self.state[qubit_index] = random.randint(0, 1)
-        elif gate == 'X':  # Pauli-X: bit flip
-            self.state[qubit_index] = 1 - self.state[qubit_index]
-        elif gate == 'Z':  # Pauli-Z: phase flip (simplified)
-            pass  # In this simple model, phase doesn't affect measurement
-        elif gate == 'T':  # T gate: π/4 phase rotation (simplified)
-            pass  # Phase operations simplified in this model
-        else:
-            raise ValueError(f"Unknown gate: {gate}")
-        
-        return self.state[qubit_index]
-    
-    def entangle(self, qubit1, qubit2):
-        """Create entanglement between two qubits (simplified)"""
-        if qubit1 >= self.qubits or qubit2 >= self.qubits:
-            raise ValueError("Qubit indices out of range")
-        
-        # Simplified entanglement: make qubit2 match qubit1
-        self.state[qubit2] = self.state[qubit1]
-        
-    def measure(self, qubit_index=None):
-        """Project to classical state (measurement collapses superposition)"""
-        if qubit_index is not None:
-            # Measure specific qubit
-            if qubit_index >= self.qubits:
-                raise ValueError(f"Qubit index {qubit_index} out of range")
-            result = self.state[qubit_index]
-            self.measurement_history.append((qubit_index, result))
-            return result
-        else:
-            # Measure all qubits
-            results = self.state.copy()
-            self.measurement_history.append(('all', results))
-            return results
-    
-    def reset(self):
-        """Reset all qubits to |0⟩ state"""
-        self.state = [0] * self.qubits
-        
-    def get_state_vector(self):
-        """Return current quantum state (simplified representation)"""
-        return {
-            'qubits': self.qubits,
-            'state': self.state,
-            'measurements': len(self.measurement_history)
-        }
-    
-    def quantum_random_number(self, bits=8):
-        """Generate truly random number using quantum uncertainty"""
-        result = 0
-        for i in range(min(bits, self.qubits)):
-            self.apply_gate('H', i)  # Put in superposition
-            bit = self.measure(i)     # Collapse to 0 or 1
-            result = (result << 1) | bit
-        return result
+
 class QuantumVirtualProcessor:
     """
     Enhanced quantum virtual processor with Hamiltonian-aware profile support.
@@ -116,6 +52,7 @@ class QuantumVirtualProcessor:
     - Neuromorphic sentinel monitoring for adaptive state tracking
     - Recursive weights with Ramanujan τ multipliers
     - Integration with Ouroboros Virtual Processor
+    - A simplified classical register for per-qubit gates and measurement
     """
     
     def __init__(self, qubits=6, profile='alternative'):
@@ -127,6 +64,12 @@ class QuantumVirtualProcessor:
             profile: Initial quantum profile ('alternative', 'castle', 'hive', 'empire', 'omega')
         """
         self.qubits = qubits
+        
+        # Simplified classical register (core-improvements version)
+        self.state = [0] * qubits
+        self.measurement_history = []
+        
+        from quantum_profiles import QuantumProfileManager
         
         # Initialize profile manager with Hamiltonian support
         self.profile_manager = QuantumProfileManager(
@@ -160,32 +103,106 @@ class QuantumVirtualProcessor:
                 for i in range(qubits)
             ]
     
+    def _ensure_register_size(self):
+        """Grow the classical register if self.qubits was raised (e.g. expand_qubits)."""
+        if len(self.state) < self.qubits:
+            self.state.extend([0] * (self.qubits - len(self.state)))
+    
     def apply_gate(self, gate, reg):
         """
-        Apply a quantum gate operation.
+        Apply a single-qubit gate to the simplified classical register.
         
         Args:
-            gate: Gate identifier (e.g., 'H', 'X', 'CNOT')
-            reg: Register/qubit index(es) to apply gate to
+            gate: Gate identifier: 'H', 'X', 'Y', 'Z' or 'T'
+            reg: Qubit index to apply the gate to
+        
+        Returns:
+            The qubit's classical value after the gate
+        
+        Raises:
+            ValueError: If the qubit index is out of range or the gate is unknown
         """
-        # Basic gate operations (placeholder for full implementation)
-        # In full implementation, this would modify the profile's quantum state
-        pass
+        if reg >= self.qubits:
+            raise ValueError(f"Qubit index {reg} out of range (max: {self.qubits-1})")
+        self._ensure_register_size()
+        
+        gate = gate.upper()
+        
+        if gate == 'H':  # Hadamard: creates superposition
+            # Simplified: randomly set to 0 or 1 (50/50 chance)
+            self.state[reg] = random.randint(0, 1)
+        elif gate == 'X':  # Pauli-X: bit flip
+            self.state[reg] = 1 - self.state[reg]
+        elif gate == 'Y':  # Pauli-Y: bit flip plus phase; phase is dropped in this model
+            self.state[reg] = 1 - self.state[reg]
+        elif gate == 'Z':  # Pauli-Z: phase flip (simplified)
+            pass  # In this simple model, phase doesn't affect measurement
+        elif gate == 'T':  # T gate: π/4 phase rotation (simplified)
+            pass  # Phase operations simplified in this model
+        else:
+            raise ValueError(f"Unknown gate: {gate}")
+        
+        return self.state[reg]
     
-    def measure(self):
+    def entangle(self, qubit1, qubit2):
+        """Create entanglement between two qubits (simplified)"""
+        if qubit1 >= self.qubits or qubit2 >= self.qubits:
+            raise ValueError("Qubit indices out of range")
+        self._ensure_register_size()
+        
+        # Simplified entanglement: make qubit2 match qubit1
+        self.state[qubit2] = self.state[qubit1]
+    
+    def measure(self, qubit_index=None):
         """
         Perform quantum measurement, projecting to classical state.
         
+        Args:
+            qubit_index: None to sample the active profile's Hamiltonian state;
+                an index to read that qubit of the classical register
+        
         Returns:
-            Measurement outcome based on current state probabilities
+            Basis-state index sampled from the state probabilities (no argument),
+            or the qubit's classical value (0 or 1)
         """
+        if qubit_index is not None:
+            # Measure specific qubit of the classical register
+            if qubit_index >= self.qubits:
+                raise ValueError(f"Qubit index {qubit_index} out of range")
+            self._ensure_register_size()
+            result = self.state[qubit_index]
+            self.measurement_history.append((qubit_index, result))
+            return result
+        
         import numpy as np
         state = self.profile_manager.get_state()
         probabilities = np.abs(state) ** 2
         
         # Sample from probability distribution
         outcome = np.random.choice(len(probabilities), p=probabilities)
+        self.measurement_history.append(('all', outcome))
         return outcome
+    
+    def reset(self):
+        """Reset all qubits of the classical register to |0⟩"""
+        self.state = [0] * self.qubits
+    
+    def get_state_vector(self):
+        """Return current quantum state (simplified representation)"""
+        return {
+            'qubits': self.qubits,
+            'state': self.state,
+            'measurements': len(self.measurement_history)
+        }
+    
+    def quantum_random_number(self, bits=8):
+        """Generate truly random number using quantum uncertainty"""
+        result = 0
+        for i in range(min(bits, self.qubits)):
+            self.apply_gate('H', i)  # Put in superposition
+            bit = self.measure(i)     # Collapse to 0 or 1
+            result = (result << 1) | bit
+        return result
     
     # === Hamiltonian-aware operations ===
     
@@ -349,5 +366,3 @@ class QuantumVirtualProcessor:
             })
         
         return evolved_weights
-        # ... project to classical state ...
-        pass

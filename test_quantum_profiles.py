@@ -69,7 +69,7 @@ def test_ml_quantum_addon():
     return True
 
 
-def test_quantum_profile(profile_class, profile_name):
+def check_quantum_profile(profile_class, profile_name):
     """Test a quantum profile."""
     print(f"\n=== Testing {profile_name} ===")
     
@@ -120,6 +120,22 @@ def test_quantum_profile(profile_class, profile_name):
     
     print(f"✓ All {profile_name} tests passed!")
     return True
+
+
+def test_alternative_profile():
+    check_quantum_profile(AlternativeQuantumVirtualProcessor, "Alternative")
+
+
+def test_castle_profile():
+    check_quantum_profile(CastleQuantumVirtualProcessor, "Castle")
+
+
+def test_hive_profile():
+    check_quantum_profile(HiveQuantumVirtualProcessor, "Hive")
+
+
+def test_empire_profile():
+    check_quantum_profile(EmpireQuantumVirtualProcessor, "Empire")
 
 
 def test_ml_with_sklearn():
@@ -196,10 +212,10 @@ def run_all_tests():
         test_ml_quantum_addon()
         
         # Test all quantum profiles
-        test_quantum_profile(AlternativeQuantumVirtualProcessor, "Alternative")
-        test_quantum_profile(CastleQuantumVirtualProcessor, "Castle")
-        test_quantum_profile(HiveQuantumVirtualProcessor, "Hive")
-        test_quantum_profile(EmpireQuantumVirtualProcessor, "Empire")
+        check_quantum_profile(AlternativeQuantumVirtualProcessor, "Alternative")
+        check_quantum_profile(CastleQuantumVirtualProcessor, "Castle")
+        check_quantum_profile(HiveQuantumVirtualProcessor, "Hive")
+        check_quantum_profile(EmpireQuantumVirtualProcessor, "Empire")
         
         # Test ML integration
         test_ml_with_sklearn()

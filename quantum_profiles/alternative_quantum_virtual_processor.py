@@ -5,6 +5,9 @@ An extensible quantum processor implementation with add-on support, diagnostics,
 and fallback mechanisms. This processor accepts uncertainty and works in harmony
 with classical logic, providing a flexible foundation for quantum operations.
 
+ML integration: an MLQuantumAddon is installed by default (addons[0]) and logs
+gates, measurements, expansion and diagnostics.
+
 Components:
     - QuantumAddon: Base class for extensible add-ons
     - LoggerAddon: Logging functionality for quantum operations
@@ -14,6 +17,8 @@ Components:
 
 import logging
 from typing import List, Optional, Any
+
+from quantum_profiles.ml_quantum_addon import MLQuantumAddon
 
 
 class QuantumAddon:
@@ -158,6 +163,17 @@ class QuantumQubitBuffer:
         """
         if 0 <= qubit < self.size:
             self.state[qubit] = value & 1
+    
+    def expand(self, additional: int) -> None:
+        """
+        Add qubits to the buffer, each starting in the |0⟩ state.
+        
+        Args:
+            additional (int): Number of qubits to add
+        """
+        self.state.extend([0] * additional)
+        self.is_superposition.extend([False] * additional)
+        self.size += additional
 
 
 class AlternativeQuantumVirtualProcessor:
@@ -167,22 +183,45 @@ class AlternativeQuantumVirtualProcessor:
     This processor simulates quantum operations and integrates with classical
     and AI routines. It includes diagnostics, fallback mechanisms, and supports
     dynamic add-on registration for extended functionality.
+    
+    Two add-on interfaces are supported: QuantumAddon hooks (on_gate_apply,
+    on_measure) and the MLQuantumAddon hooks (before_gate, after_gate,
+    before_measurement, after_measurement).
+    
+    Usage:
+        >>> processor = AlternativeQuantumVirtualProcessor(qubits=6)
+        >>> processor.apply_gate("H", 0)
+        >>> result = processor.measure()
+        >>> stats = processor.get_addon_statistics()
     """
     
-    def __init__(self, qubits: int = 6, addons: Optional[List[QuantumAddon]] = None):
+    # Define addons list with ML quantum addon enabled by default
+    ADDONS = [
+        MLQuantumAddon(train_on_fly=True)
+    ]
+    
+    def __init__(self, qubits: int = 6, addons: Optional[List[QuantumAddon]] = None, **kwargs):
         """
         Initialize the alternative quantum processor.
         
         Args:
             qubits (int): Number of qubits to simulate
-            addons (List[QuantumAddon], optional): List of add-ons to install
+            addons (List[QuantumAddon], optional): List of add-ons to install,
+                in addition to the default ML quantum addon
+            **kwargs: Additional arguments
         """
         self.qubits = qubits
         self.buffer = QuantumQubitBuffer(qubits)
-        self.addons = addons if addons is not None else []
+        self.addons = [addon for addon in self.ADDONS] + (list(addons) if addons is not None else [])
         self.operation_count = 0
         self.last_measurement = None
         self.diagnostics_enabled = True
+        
+        # Store processor context for addon hooks
+        self._context = {
+            'qubits': qubits,
+            'profile': 'Alternative'
+        }
     
     def add_addon(self, addon: QuantumAddon) -> None:
         """
@@ -203,201 +242,6 @@ class AlternativeQuantumVirtualProcessor:
         """
         if addon in self.addons:
             self.addons.remove(addon)
-    
-    def apply_gate(self, gate: str, reg: int) -> None:
-        """
-        Apply a quantum gate to a register.
-        
-        Args:
-            gate (str): Name of the gate (e.g., 'H', 'X', 'CNOT')
-            reg (int): Register/qubit index
-        """
-        # Notify add-ons
-        for addon in self.addons:
-            if addon.enabled:
-                addon.on_gate_apply(gate, reg)
-        
-        # Simulate gate operation
-        if gate.upper() == 'X':
-            # Pauli-X (NOT gate)
-            current = self.buffer.get_state(reg)
-            self.buffer.set_state(reg, 1 - current)
-        elif gate.upper() == 'H':
-            # Hadamard gate - creates superposition
-            self.buffer.set_superposition(reg, True)
-        elif gate.upper() == 'Z':
-            # Pauli-Z gate (phase flip)
-            pass  # Phase operations handled in full quantum simulator
-        
-        self.operation_count += 1
-        
-        # Fallback: If operations exceed threshold, perform diagnostics
-        if self.diagnostics_enabled and self.operation_count % 100 == 0:
-            self._run_diagnostics()
-    
-    def measure(self, reg=None):
-        """
-        Measure quantum state and project to classical state.
-        
-        Args:
-            reg: Specific register (int), list of registers, or None for all
-            
-        Returns:
-            Measurement result (int or list)
-        """
-        import random
-        
-        if reg is not None:
-            # Check if reg is a list of registers
-            if isinstance(reg, (list, tuple)):
-                # Measure multiple specific qubits
-                result = []
-                for r in reg:
-                    if self.buffer.is_superposition[r]:
-                        val = random.choice([0, 1])
-                        self.buffer.set_state(r, val)
-                        self.buffer.set_superposition(r, False)
-                        result.append(val)
-                    else:
-                        result.append(self.buffer.get_state(r))
-            else:
-                # Measure single specific qubit
-                if self.buffer.is_superposition[reg]:
-                    # Collapse superposition randomly
-                    result = random.choice([0, 1])
-                    self.buffer.set_state(reg, result)
-                    self.buffer.set_superposition(reg, False)
-                else:
-                    result = self.buffer.get_state(reg)
-        else:
-            # Measure all qubits
-            result = []
-            for i in range(self.qubits):
-                if self.buffer.is_superposition[i]:
-                    val = random.choice([0, 1])
-                    self.buffer.set_state(i, val)
-                    self.buffer.set_superposition(i, False)
-                    result.append(val)
-                else:
-                    result.append(self.buffer.get_state(i))
-        
-        self.last_measurement = result
-        
-        # Notify add-ons
-        for addon in self.addons:
-            if addon.enabled:
-                addon.on_measure(result)
-        
-        return result
-    
-    def reset(self) -> None:
-        """Reset the processor to initial state."""
-        self.buffer.reset()
-        self.operation_count = 0
-        self.last_measurement = None
-    
-    def _run_diagnostics(self) -> None:
-        """
-        Run internal diagnostics on the processor.
-        
-        This is a fallback mechanism to ensure processor stability during
-        long-running operations.
-        """
-        # Check buffer integrity
-        if self.buffer.size != self.qubits:
-            # Fallback: Recreate buffer
-            self.buffer = QuantumQubitBuffer(self.qubits)
-        
-        # Log diagnostic information if logger addon is present
-        for addon in self.addons:
-            if isinstance(addon, LoggerAddon) and addon.enabled:
-                addon.logger.info(
-                    f"Diagnostics: {self.operation_count} operations performed, "
-                    f"buffer integrity OK"
-                )
-    
-    def get_state_info(self) -> dict:
-        """
-        Get information about the current processor state.
-        
-        Returns:
-            dict: State information including qubit count, operations, etc.
-        """
-        return {
-            'qubits': self.qubits,
-            'operations': self.operation_count,
-            'last_measurement': self.last_measurement,
-            'addons': [addon.name for addon in self.addons if addon.enabled],
-            'buffer_size': self.buffer.size
-        }
-
-
-def get_profile():
-    """
-    Factory function to create a fully configured AlternativeQuantumVirtualProcessor.
-    
-    Returns:
-        AlternativeQuantumVirtualProcessor: Processor instance with standard add-ons
-    """
-    # Create processor with default configuration
-    processor = AlternativeQuantumVirtualProcessor(qubits=6)
-    
-    # Add standard add-ons
-    logger_addon = LoggerAddon(log_level=logging.INFO)
-    processor.add_addon(logger_addon)
-    
-    return processor
-A quantum processor profile that emphasizes alternative approaches to quantum computation,
-with integrated ML-based process logging and adaptive learning.
-
-Philosophy:
-- Explores non-standard gate sequences
-- Encourages experimental quantum algorithms
-- Self-instrumenting with ML-based monitoring
-- Learns from all quantum operations
-"""
-
-from quantum_virtual_processor import QuantumVirtualProcessor
-from quantum_profiles.ml_quantum_addon import MLQuantumAddon
-
-
-class AlternativeQuantumVirtualProcessor(QuantumVirtualProcessor):
-    """
-    Alternative quantum processor with ML-based self-instrumentation.
-    
-    This profile explores alternative quantum computation approaches while
-    automatically logging and learning from all operations.
-    
-    Usage:
-        >>> processor = AlternativeQuantumVirtualProcessor(qubits=6)
-        >>> processor.apply_gate("H", 0)
-        >>> result = processor.measure()
-        >>> stats = processor.get_addon_statistics()
-    """
-    
-    # Define addons list with ML quantum addon enabled by default
-    ADDONS = [
-        MLQuantumAddon(train_on_fly=True)
-    ]
-    
-    def __init__(self, qubits=6, **kwargs):
-        """
-        Initialize Alternative quantum processor with ML instrumentation.
-        
-        Args:
-            qubits: Number of qubits (default: 6)
-            **kwargs: Additional arguments
-        """
-        super().__init__(qubits)
-        
-        # Initialize addons
-        self.addons = [addon for addon in self.ADDONS]
-        
-        # Store processor context for addon hooks
-        self._context = {
-            'qubits': qubits,
-            'profile': 'Alternative'
-        }
     
     def _before_gate_hooks(self, gate: str, register: int) -> None:
         """
@@ -446,13 +290,13 @@ class AlternativeQuantumVirtualProcessor(QuantumVirtualProcessor):
             if hasattr(addon, 'after_measurement'):
                 addon.after_measurement(register, result, self._context)
     
-    def apply_gate(self, gate: str, register: int, **kwargs) -> None:
+    def apply_gate(self, gate: str, reg: int, **kwargs) -> None:
         """
-        Apply a quantum gate with ML monitoring.
+        Apply a quantum gate to a register.
         
         Args:
-            gate: Gate name (e.g., 'H', 'X', 'CNOT')
-            register: Register/qubit to apply gate to
+            gate (str): Name of the gate (e.g., 'H', 'X', 'CNOT')
+            reg (int): Register/qubit index
             **kwargs: Additional gate parameters
         """
         # Update context with any additional parameters
@@ -460,35 +304,138 @@ class AlternativeQuantumVirtualProcessor(QuantumVirtualProcessor):
         context.update(kwargs)
         self._context = context
         
-        # Before hooks
-        self._before_gate_hooks(gate, register)
+        # Before hooks (ML quantum addon)
+        self._before_gate_hooks(gate, reg)
         
-        # Apply the gate (call parent implementation)
-        super().apply_gate(gate, register)
+        # Notify add-ons
+        for addon in self.addons:
+            if getattr(addon, 'enabled', True) and hasattr(addon, 'on_gate_apply'):
+                addon.on_gate_apply(gate, reg)
         
-        # After hooks
-        self._after_gate_hooks(gate, register)
+        # Simulate gate operation
+        if gate.upper() == 'X':
+            # Pauli-X (NOT gate)
+            current = self.buffer.get_state(reg)
+            self.buffer.set_state(reg, 1 - current)
+        elif gate.upper() == 'H':
+            # Hadamard gate - creates superposition
+            self.buffer.set_superposition(reg, True)
+        elif gate.upper() == 'Z':
+            # Pauli-Z gate (phase flip)
+            pass  # Phase operations handled in full quantum simulator
+        
+        self.operation_count += 1
+        
+        # Fallback: If operations exceed threshold, perform diagnostics
+        if self.diagnostics_enabled and self.operation_count % 100 == 0:
+            self._run_diagnostics()
+        
+        # After hooks (ML quantum addon)
+        self._after_gate_hooks(gate, reg)
     
-    def measure(self, register: int = None) -> int:
+    def measure(self, reg=None):
         """
-        Measure quantum register with ML monitoring.
+        Measure quantum state and project to classical state.
         
         Args:
-            register: Optional register to measure (None = measure all)
+            reg: Specific register (int), list of registers, or None for all
             
         Returns:
-            Measurement result
+            Measurement result (int or list)
         """
-        # Before hooks
-        self._before_measurement_hooks(register)
+        import random
         
-        # Perform measurement (call parent implementation)
-        result = super().measure()
+        # Before hooks (ML quantum addon)
+        self._before_measurement_hooks(reg)
         
-        # After hooks
-        self._after_measurement_hooks(register if register is not None else 0, result)
+        
+        if reg is not None:
+            # Check if reg is a list of registers
+            if isinstance(reg, (list, tuple)):
+                # Measure multiple specific qubits
+                result = []
+                for r in reg:
+                    if self.buffer.is_superposition[r]:
+                        val = random.choice([0, 1])
+                        self.buffer.set_state(r, val)
+                        self.buffer.set_superposition(r, False)
+                        result.append(val)
+                    else:
+                        result.append(self.buffer.get_state(r))
+            else:
+                # Measure single specific qubit
+                if self.buffer.is_superposition[reg]:
+                    # Collapse superposition randomly
+                    result = random.choice([0, 1])
+                    self.buffer.set_state(reg, result)
+                    self.buffer.set_superposition(reg, False)
+                else:
+                    result = self.buffer.get_state(reg)
+        else:
+            # Measure all qubits
+            result = []
+            for i in range(self.qubits):
+                if self.buffer.is_superposition[i]:
+                    val = random.choice([0, 1])
+                    self.buffer.set_state(i, val)
+                    self.buffer.set_superposition(i, False)
+                    result.append(val)
+                else:
+                    result.append(self.buffer.get_state(i))
+        
+        self.last_measurement = result
+        
+        # Notify add-ons
+        for addon in self.addons:
+            if getattr(addon, 'enabled', True) and hasattr(addon, 'on_measure'):
+                addon.on_measure(result)
+        
+        # After hooks (ML quantum addon)
+        self._after_measurement_hooks(reg if reg is not None else 0, result)
         
         return result
+    
+    def reset(self) -> None:
+        """Reset the processor to initial state."""
+        self.buffer.reset()
+        self.operation_count = 0
+        self.last_measurement = None
+    
+    def _run_diagnostics(self) -> None:
+        """
+        Run internal diagnostics on the processor.
+        
+        This is a fallback mechanism to ensure processor stability during
+        long-running operations.
+        """
+        # Check buffer integrity
+        if self.buffer.size != self.qubits:
+            # Fallback: Recreate buffer
+            self.buffer = QuantumQubitBuffer(self.qubits)
+        
+        # Log diagnostic information if logger addon is present
+        for addon in self.addons:
+            if isinstance(addon, LoggerAddon) and addon.enabled:
+                addon.logger.info(
+                    f"Diagnostics: {self.operation_count} operations performed, "
+                    f"buffer integrity OK"
+                )
+    
+    def get_state_info(self) -> dict:
+        """
+        Get information about the current processor state.
+        
+        Returns:
+            dict: State information including qubit count, operations, etc.
+        """
+        return {
+            'qubits': self.qubits,
+            'operations': self.operation_count,
+            'last_measurement': self.last_measurement,
+            'addons': [getattr(addon, 'name', type(addon).__name__) for addon in self.addons
+                       if getattr(addon, 'enabled', True)],
+            'buffer_size': self.buffer.size
+        }
     
     def expand_qubits(self, additional_qubits: int) -> None:
         """
@@ -499,6 +446,7 @@ class AlternativeQuantumVirtualProcessor(QuantumVirtualProcessor):
         """
         old_qubits = self.qubits
         self.qubits += additional_qubits
+        self.buffer.expand(additional_qubits)
         self._context['qubits'] = self.qubits
         
         # Log expansion to addons
@@ -553,3 +501,20 @@ class AlternativeQuantumVirtualProcessor(QuantumVirtualProcessor):
             if isinstance(addon, MLQuantumAddon):
                 return addon
         return None
+
+
+def get_profile():
+    """
+    Factory function to create a fully configured AlternativeQuantumVirtualProcessor.
+    
+    Returns:
+        AlternativeQuantumVirtualProcessor: Processor instance with standard add-ons
+    """
+    # Create processor with default configuration
+    processor = AlternativeQuantumVirtualProcessor(qubits=6)
+    
+    # Add standard add-ons
+    logger_addon = LoggerAddon(log_level=logging.INFO)
+    processor.add_addon(logger_addon)
+    
+    return processor

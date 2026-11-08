@@ -9,6 +9,9 @@ Philosophy:
 - Collaborative computation strategies
 - Self-instrumenting with ML-based monitoring
 - Learns from all quantum operations for swarm intelligence
+
+A hive can stand alone or be one cell of an Empire's Kaleidoscopic Hive grid
+(see empire_quantum_virtual_processor), where hive_id is its (row, col).
 """
 
 from quantum_virtual_processor import QuantumVirtualProcessor
@@ -34,16 +37,18 @@ class HiveQuantumVirtualProcessor(QuantumVirtualProcessor):
         MLQuantumAddon(train_on_fly=True)
     ]
     
-    def __init__(self, qubits=6, **kwargs):
+    def __init__(self, qubits=8, hive_id=None, **kwargs):
         """
         Initialize Hive quantum processor with ML instrumentation.
-        
+
         Args:
-            qubits: Number of qubits (default: 6)
+            qubits: Number of qubits (default: 8)
+            hive_id: Optional (row, col) position of this hive in an Empire grid
             **kwargs: Additional arguments
         """
         super().__init__(qubits)
-        
+        self.hive_id = hive_id
+
         # Initialize addons
         self.addons = [addon for addon in self.ADDONS]
         
@@ -52,7 +57,17 @@ class HiveQuantumVirtualProcessor(QuantumVirtualProcessor):
             'qubits': qubits,
             'profile': 'Hive'
         }
-    
+
+    @property
+    def hive_qubits(self):
+        """Number of qubits in this hive (same as qubits)."""
+        return self.qubits
+
+    def __repr__(self):
+        """String representation of the hive."""
+        hive_pos = f" at {self.hive_id}" if self.hive_id else ""
+        return f"<HiveQuantumVirtualProcessor{hive_pos}: {self.hive_qubits} qubits>"
+
     def _before_gate_hooks(self, gate: str, register: int) -> None:
         """
         Call all addon before_gate hooks.

@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # ouroboros_sync.so needs Python 3.12+; on 3.11 its tests skip themselves.
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile every tracked Python file
+        run: git ls-files -z '*.py' | xargs -0 python -m py_compile
+
+      - name: Check for duplicate definitions
+        # Catches conflict resolutions that kept both sides: the file still
+        # compiles, but the later definition silently replaces the earlier one.
+        run: git ls-files -z '*.py' | xargs -0 python .github/scripts/check_duplicate_definitions.py
+
+      - name: Install test dependencies
+        # The core needs only the standard library; the quantum profiles need
+        # numpy, and scikit-learn exercises the ML addon's sklearn integration.
+        run: python -m pip install "numpy>=1.24,<3" "scikit-learn>=1.3,<2" "pytest>=8,<9"
+
+      - name: Run tests
+        run: python -m pytest -q -rs

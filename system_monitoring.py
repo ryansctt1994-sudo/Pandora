@@ -99,10 +99,3 @@ class SystemMonitoring:
 if __name__ == "__main__":
     monitor = SystemMonitoring(check_interval=3)
     monitor.run()
-class SystemMonitoring:
-    def __init__(self, orchestrator):
-        self.orchestrator = orchestrator
-    def run(self):
-        # Periodically log and reflect on system well-being
-        pass
-        pass

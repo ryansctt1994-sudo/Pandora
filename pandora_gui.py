@@ -164,9 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-class App(tk.Tk):
-    def __init__(self):
-        # Setup simple window with Start/Stop, status display
-        pass
-        pass

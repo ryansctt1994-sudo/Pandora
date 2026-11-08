@@ -1,72 +1,120 @@
 """
 ML Quantum Addon
 
-Provides machine learning capabilities with Hamiltonian awareness for quantum profiles.
-Enables Hamiltonian parameter learning, expectation value tracking, and ML-guided optimization.
+Machine learning addon for the quantum profiles. It combines two designs that
+were merged separately into this repository:
+
+1. Hamiltonian learning (quantum_profiles.profile_manager, quantum_virtual_processor):
+   Hamiltonian parameter learning, expectation value tracking and
+   ML-guided optimization.
+
+2. Process logging and on-the-fly training (the *_quantum_virtual_processor
+   profiles): logs quantum gates, measurements, expansion and diagnostics,
+   and incrementally trains a pluggable model (anything with partial_fit,
+   e.g. scikit-learn's SGDClassifier).
+
+Usage:
+    Hamiltonian learning:
+    >>> from quantum_profiles.ml_quantum_addon import MLQuantumAddon
+    >>> ml = MLQuantumAddon(profile=profile, learning_rate=0.05)
+    >>> ml.log_expectation_value(hamiltonian, state)
+
+    Process logging with default settings:
+    >>> addon = MLQuantumAddon()
+    >>> addon.before_gate("H", 0, {"qubits": 4})
+    >>> addon.after_gate("H", 0, {"qubits": 4})
+
+    With custom ML model (scikit-learn):
+    >>> from sklearn.linear_model import SGDClassifier
+    >>> model = SGDClassifier()
+    >>> addon = MLQuantumAddon(model=model, train_on_fly=True)
+
+    With custom pluggable model:
+    >>> class CustomModel:
+    ...     def partial_fit(self, X, y, classes=None):
+    ...         # Your incremental learning logic
+    ...         pass
+    >>> addon = MLQuantumAddon(model=CustomModel(), train_on_fly=True)
+
+    Accessing logged events:
+    >>> events = addon.get_events()
+    >>> print(f"Logged {len(events)} events")
 """
-
-import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime
-from .hamiltonian import Hamiltonian
-
-# MLQuantumAddon - Machine Learning Quantum Process Logging and Training
-# This addon provides on-the-fly machine learning capabilities for quantum processors,
-# logging all quantum operations and supporting incremental training of ML models.
-#
-# Features:
-# - Logs quantum gates, measurements, expansion, and diagnostics
-# - Supports on-the-fly incremental training (default: enabled)
-# - Compatible with scikit-learn and custom pluggable models
-# - Self-instrumenting for adaptive learning
 
 import time
 import logging
-from typing import Any, Dict, List, Optional, Callable
 import numpy as np
+from typing import Any, Callable, Dict, List, Optional, Tuple
+from datetime import datetime
+from .hamiltonian import Hamiltonian
 
 
 class MLQuantumAddon:
     """
-    Machine Learning addon for quantum profiles with Hamiltonian awareness.
+    ML addon for Hamiltonian learning and for quantum process logging.
     
-    Provides:
-    - Hamiltonian logging and tracking
-    - Expectation value computation and history
-    - Hamiltonian parameter learning and optimization
-    - ML-guided Hamiltonian construction
-    - Integration with quantum profiles for adaptive learning
-    
-    Attributes:
-        profile: Reference to quantum profile (optional)
-        hamiltonian_history: History of Hamiltonian configurations
-        expectation_history: History of expectation values
+    Hamiltonian learning attributes:
+        profile: Quantum profile the addon is attached to (optional)
         learning_rate: Learning rate for parameter optimization
-        parameter_history: History of learned parameters
+    
+    Process logging attributes:
+        model: Optional ML model supporting partial_fit for incremental learning
+        train_on_fly: Enable/disable on-the-fly training (default: True)
+        event_log: List of all logged quantum events
+        feature_buffer: Buffer for features awaiting training
+        label_buffer: Buffer for labels awaiting training
     """
     
-    def __init__(self, profile=None, learning_rate: float = 0.01):
+    def __init__(self, profile=None, learning_rate: float = 0.01, *,
+                 model: Optional[Any] = None, train_on_fly: bool = True,
+                 buffer_size: int = 10, log_level: int = logging.INFO):
         """
         Initialize the ML Quantum Addon.
         
         Args:
             profile: Quantum profile to attach to (optional)
             learning_rate: Learning rate for parameter optimization
+            model: Optional ML model with partial_fit method for incremental learning.
+                   Compatible with scikit-learn models (SGDClassifier, etc.)
+            train_on_fly: Enable on-the-fly incremental training (default: True)
+            buffer_size: Number of events to buffer before training (default: 10)
+            log_level: Logging level (default: INFO)
         """
+        # Hamiltonian learning state
         self.profile = profile
         self.learning_rate = learning_rate
-        
+    
         # History tracking
         self.hamiltonian_history: List[Dict[str, Any]] = []
         self.expectation_history: List[Dict[str, Any]] = []
         self.parameter_history: List[Dict[str, Any]] = []
-        
+    
         # Current parameters being learned
         self.learned_parameters: Dict[str, float] = {}
-        
+    
         # Statistics
         self.total_measurements = 0
         self.training_iterations = 0
+
+        # Process logging and on-the-fly training state
+        self.model = model
+        self.train_on_fly = train_on_fly
+        self.buffer_size = buffer_size
+        self.event_log: List[Dict[str, Any]] = []
+        self.feature_buffer: List[np.ndarray] = []
+        self.label_buffer: List[int] = []
+    
+        # Setup logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            ))
+            self.logger.addHandler(handler)
+    
+        self.logger.info(f"MLQuantumAddon initialized (train_on_fly={train_on_fly})")
     
     def attach_profile(self, profile) -> None:
         """
@@ -362,47 +410,8 @@ class MLQuantumAddon:
     def __repr__(self) -> str:
         """Detailed representation."""
         return f"<MLQuantumAddon(learning_rate={self.learning_rate}, measurements={self.total_measurements})>"
-    Machine Learning addon for quantum processors that logs operations
-    and supports on-the-fly incremental training.
     
-    Attributes:
-        model: Optional ML model supporting partial_fit for incremental learning
-        train_on_fly: Enable/disable on-the-fly training (default: True)
-        event_log: List of all logged quantum events
-        feature_buffer: Buffer for features awaiting training
-        label_buffer: Buffer for labels awaiting training
-    """
-    
-    def __init__(self, model: Optional[Any] = None, train_on_fly: bool = True,
-                 buffer_size: int = 10, log_level: int = logging.INFO):
-        """
-        Initialize the MLQuantumAddon.
-        
-        Args:
-            model: Optional ML model with partial_fit method for incremental learning.
-                   Compatible with scikit-learn models (SGDClassifier, etc.)
-            train_on_fly: Enable on-the-fly incremental training (default: True)
-            buffer_size: Number of events to buffer before training (default: 10)
-            log_level: Logging level (default: INFO)
-        """
-        self.model = model
-        self.train_on_fly = train_on_fly
-        self.buffer_size = buffer_size
-        self.event_log: List[Dict[str, Any]] = []
-        self.feature_buffer: List[np.ndarray] = []
-        self.label_buffer: List[int] = []
-        
-        # Setup logging
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(log_level)
-        if not self.logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            ))
-            self.logger.addHandler(handler)
-        
-        self.logger.info(f"MLQuantumAddon initialized (train_on_fly={train_on_fly})")
+    # === Process logging and on-the-fly training ===
     
     def _log_event(self, event_type: str, operation: str, 
                    register: Any, context: Dict[str, Any]) -> None:
@@ -646,7 +655,9 @@ class MLQuantumAddon:
         return len(self.event_log)
     
     def clear_events(self) -> None:
-        """Clear all logged events and buffers."""
+        """
+        Clear all logged events and buffers.
+        """
         self.event_log.clear()
         self.feature_buffer.clear()
         self.label_buffer.clear()

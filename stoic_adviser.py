@@ -10,10 +10,6 @@ class StoicAdviser:
     stoic_quotes = [
         "Accept what you cannot control; optimize what you can.",
         "Every obstacle is an opportunity for virtue.",
-        "Stay tranquil in difficulty."
-    ]
-    def advise(self):
-        return random.choice(self.stoic_quotes)
         "Stay tranquil in difficulty.",
         "The impediment to action advances action. What stands in the way becomes the way.",
         "You have power over your mind - not outside events. Realize this, and you will find strength.",
@@ -85,7 +81,3 @@ class StoicAdviser:
             "Your mind is your fortress. Guard it well."
         ]
         return random.choice(reflections)
-        "Stay tranquil in difficulty."
-    ]
-    def advise(self):
-        return random.choice(self.stoic_quotes)

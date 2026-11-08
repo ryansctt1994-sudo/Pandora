@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from quantum_profiles import (
     EmpireQuantumVirtualProcessor,
     HiveQuantumVirtualProcessor,
+    MLQuantumAddon,
     get_profile,
     list_profiles,
     QUANTUM_PROFILES
@@ -227,9 +228,14 @@ def test_addon_support():
     
     addon = MockAddon()
     
+    # The ML quantum addon is registered by default
+    assert len(empire.addons) == 1, "Should start with only the default ML addon"
+    assert isinstance(empire.addons[0], MLQuantumAddon), "Default addon should be the ML addon"
+
     # Register addon
     empire.register_addon(addon)
-    assert len(empire.addons) == 1, "Should have 1 registered addon"
+    assert len(empire.addons) == 2, "Should have the ML addon plus 1 registered addon"
+    assert empire.addons[-1] is addon, "Registered addon should be appended"
     
     # Execute addon
     result = empire.execute_addon("test_addon")
@@ -263,7 +269,7 @@ def test_empire_stats():
     assert stats['total_hives'] == 9, "Should report correct total hives"
     assert stats['hive_qubits'] == 10, "Should report correct hive qubits"
     assert stats['total_qubits'] == 6 + (9 * 10), "Should calculate total qubits correctly"
-    assert stats['registered_addons'] == 0, "Should have no addons initially"
+    assert stats['registered_addons'] == 1, "Should have only the default ML addon initially"
     
     print("✓ Empire statistics tests passed")
 
