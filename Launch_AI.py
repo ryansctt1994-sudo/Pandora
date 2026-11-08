@@ -4,6 +4,9 @@ Universal AIOS Launcher for NVIDIA/Intel/ASUS ROG
 - Detects platform & hardware.
 - Verifies NVIDIA GPU (CUDA) and Intel CPU presence.
 - Launches main AI/Orchestrator routine.
+
+This is the only copy: launch_ai.py was removed because the two names are
+the same file on case-insensitive filesystems (Windows, macOS).
 """
 
 import platform
