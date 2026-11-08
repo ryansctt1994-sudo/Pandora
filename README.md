@@ -232,6 +232,8 @@ MIT License - See LICENSE file for details
 
 Created as a demonstration of AI-powered operating system concepts, combining traditional OS design with modern artificial intelligence capabilities.
 
+---
+
 # AIOS Pandora (Cubic USB/Live Boot Ready)
 
 ## Overview
@@ -276,7 +278,6 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
    ```
 
 ## Setup for USB/Live Boot
-## Setup
 
 1. **Integrate into ISO**  
    Use [Cubic](https://launchpad.net/cubic) to open your base Ubuntu ISO.  
@@ -298,7 +299,6 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 ## On Boot
 
 - Antivirus and firewalls start before AIOS.
-- Pandora always runs safe by default; full orchestrator only starts if health checks pass.
 - Pandora always runs safe by default; full orchestrator only starts if health checks pass.
 
 ## Components
@@ -366,4 +366,3 @@ For issues and questions, refer to the ethics documentation or examine the code 
 ## License
 
 Open source - designed for accessibility and community improvement.
-- Pandora always runs safe by default; full orchestrator only starts if health checks pass.

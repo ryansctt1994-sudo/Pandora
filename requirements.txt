@@ -1,6 +1,7 @@
 # Pandora AIOS Requirements
-# No external dependencies for core functionality - uses Python standard library only
-# Pandora AIOS Dependencies
+#
+# The core OS (pandora_aios/) uses only the Python standard library.
+# Each package below is for the feature named above it.
 
 # Web Framework for Assimilation Portal
 flask>=2.0.0
@@ -12,10 +13,14 @@ pyclamd>=0.4.0
 # System Monitoring
 psutil>=5.9.0
 
+# Quantum processor simulation: quantum_profiles/, quantum_virtual_processor.py,
+# the ouroboros modules and PandoraLauncher.py
+numpy>=1.21.0
+
 # GUI (Optional - for desktop environments)
 # Uncomment if using GUI mode:
 # tkinter is usually built-in with Python
 
 # Optional: Advanced features
-# numpy>=1.21.0  # For quantum processor simulation
 # requests>=2.28.0  # For external API calls
+# scikit-learn  # For scikit-learn models in the ML quantum addon

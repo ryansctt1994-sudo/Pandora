@@ -16,6 +16,7 @@ Components:
 """
 
 import logging
+from functools import partial
 from typing import List, Optional, Any
 
 from quantum_profiles.ml_quantum_addon import MLQuantumAddon
@@ -195,9 +196,11 @@ class AlternativeQuantumVirtualProcessor:
         >>> stats = processor.get_addon_statistics()
     """
     
-    # Define addons list with ML quantum addon enabled by default
+    # Define addons list with ML quantum addon enabled by default.
+    # Each entry is called once per processor, so every processor gets its
+    # own addon (its own event log, training buffers and model).
     ADDONS = [
-        MLQuantumAddon(train_on_fly=True)
+        partial(MLQuantumAddon, train_on_fly=True)
     ]
     
     def __init__(self, qubits: int = 6, addons: Optional[List[QuantumAddon]] = None, **kwargs):
@@ -212,7 +215,7 @@ class AlternativeQuantumVirtualProcessor:
         """
         self.qubits = qubits
         self.buffer = QuantumQubitBuffer(qubits)
-        self.addons = [addon for addon in self.ADDONS] + (list(addons) if addons is not None else [])
+        self.addons = [make_addon() for make_addon in self.ADDONS] + (list(addons) if addons is not None else [])
         self.operation_count = 0
         self.last_measurement = None
         self.diagnostics_enabled = True

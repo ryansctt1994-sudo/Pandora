@@ -15,7 +15,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ouroboros_sync.so needs Python 3.12+; on 3.11 its tests skip themselves.
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +23,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Check that every path can be checked out on Windows and macOS
+        # No paths that differ only in case, no names Windows cannot create.
+        run: git ls-files -z | python .github/scripts/check_portable_paths.py
+
       - name: Compile every tracked Python file
         run: git ls-files -z '*.py' | xargs -0 python -m py_compile
 
@@ -31,6 +34,14 @@ jobs:
         # Catches conflict resolutions that kept both sides: the file still
         # compiles, but the later definition silently replaces the earlier one.
         run: git ls-files -z '*.py' | xargs -0 python .github/scripts/check_duplicate_definitions.py
+
+      - name: Build ouroboros_sync from rust_modules/
+        # The tests then run against this build of the Rust source instead of
+        # the committed ouroboros_sync.so (which needs Python 3.12+).
+        # pyo3 0.20 predates Python 3.13; its stable-ABI fallback covers it.
+        env:
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
+        run: bash build_ouroboros_sync.sh
 
       - name: Install test dependencies
         # The core needs only the standard library; the quantum profiles need

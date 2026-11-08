@@ -138,6 +138,20 @@ def test_empire_profile():
     check_quantum_profile(EmpireQuantumVirtualProcessor, "Empire")
 
 
+def test_each_processor_has_its_own_ml_addon():
+    """Processors of the same profile must not share an ML addon (events, buffers, model)."""
+    for profile_class in (AlternativeQuantumVirtualProcessor, CastleQuantumVirtualProcessor,
+                          HiveQuantumVirtualProcessor, EmpireQuantumVirtualProcessor):
+        first, second = profile_class(qubits=6), profile_class(qubits=6)
+        assert first.get_ml_addon() is not second.get_ml_addon(), profile_class.__name__
+
+        first.apply_gate("H", 0)
+        assert second.get_ml_addon().get_event_count() == 0, profile_class.__name__
+
+        first.get_ml_addon().set_model(object())
+        assert second.get_ml_addon().get_model() is None, profile_class.__name__
+
+
 def test_ml_with_sklearn():
     """Test ML addon with scikit-learn model."""
     print("\n=== Testing ML Integration with scikit-learn ===")

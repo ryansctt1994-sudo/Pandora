@@ -21,6 +21,8 @@ ML integration:
 - Each hive is itself an ML-instrumented HiveQuantumVirtualProcessor
 """
 
+from functools import partial
+
 from quantum_virtual_processor import QuantumVirtualProcessor
 from quantum_profiles.ml_quantum_addon import MLQuantumAddon
 from quantum_profiles.hive_quantum_virtual_processor import HiveQuantumVirtualProcessor
@@ -50,9 +52,11 @@ class EmpireQuantumVirtualProcessor:
         >>> stats = processor.get_addon_statistics()
     """
 
-    # Define addons list with ML quantum addon enabled by default
+    # Define addons list with ML quantum addon enabled by default.
+    # Each entry is called once per processor, so every processor gets its
+    # own addon (its own event log, training buffers and model).
     ADDONS = [
-        MLQuantumAddon(train_on_fly=True)
+        partial(MLQuantumAddon, train_on_fly=True)
     ]
     
     def __init__(self, control_qubits=None, grid_size=(2, 2), hive_qubits=8, qubits=None, **kwargs):
@@ -84,7 +88,7 @@ class EmpireQuantumVirtualProcessor:
         self.hive_grid = {}
         
         # Initialize addons, ML quantum addon first
-        self.addons = [addon for addon in self.ADDONS]
+        self.addons = [make_addon() for make_addon in self.ADDONS]
         
         # Store processor context for addon hooks
         self._context = {

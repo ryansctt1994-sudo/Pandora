@@ -7,11 +7,6 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
 .Python
 build/
 develop-eggs/
@@ -25,10 +20,6 @@ parts/
 sdist/
 var/
 wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
 pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
@@ -54,38 +45,11 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
-# Virtual Environment
 # Virtual environments
 venv/
 ENV/
 env/
 .venv
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-venv/
-ENV/
-env/
 
 # IDE
 .vscode/
@@ -93,17 +57,17 @@ env/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Logs
 *.log
 logs/
 *.out
 
-# System
+# Temporary files
 .cache/
 tmp/
 temp/
+*.tmp
 
 # Pandora specific
 /var/log/pandora*
@@ -112,37 +76,11 @@ temp/
 .DS_Store
 Thumbs.db
 
-# Temporary files
-*.tmp
-*.log
-tmp/
-# Test coverage
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-
-# Logs
-*.log
-.coverage
-htmlcov/
-# Logs
-*.log
-
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/
-
 # Rust build artifacts
 rust_modules/**/target/
 rust_modules/**/*.rs.bk
 rust_modules/**/Cargo.lock
 
-# Keep the .so file in the root, but ignore in subdirectories  
+# Keep the .so file in the root, but ignore in subdirectories
 rust_modules/**/*.so
-!ouroboros_sync.so
+!/ouroboros_sync.so
