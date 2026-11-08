@@ -1,4 +1,3 @@
-<<<<<<< copilot/create-elpis-research-docs
 # OPERATIONAL DEFINITIONS — ELPIS CONSCIOUSNESS STUDY
 
 ## Purpose
@@ -67,7 +66,9 @@ Any claim not declared here is *non-scientific* by definition.
 ---
 
 *Scientific framework — 2025-11-30*
-=======
+
+---
+
 # 🖤 ELPIS PROJECT — OPERATIONAL DEFINITIONS
 
 ---
@@ -597,4 +598,3 @@ All analysis code and documentation maintained in Git:
 *Document prepared by Jan Schulzik*
 *Pandora AIOS Project*
 *2025-11-30*
->>>>>>> main

@@ -166,6 +166,116 @@ qvp = QuantumVirtualProcessor(qubits=4, profile='omega')
 qvp.add_hamiltonian_term(0.5, "ZXYZ")
 qvp.switch_profile('empire')
 ml = qvp.get_ml_addon()
+```
+
+## Usage Examples
+
+### Example 1: Basic Hamiltonian Operations
+See `demo_quantum_hamiltonian.py` for comprehensive demonstration including:
+- Creating and manipulating Hamiltonians
+- Computing energies and ground states
+- Time evolution
+- Profile comparison
+
+### Example 2: Security Integration
+See `example_quantum_security_integration.py` for:
+- Quantum random number generation
+- Encryption key derivation
+- Authentication token creation
+- Security profile comparison
+
+### Example 3: Running Tests
+```bash
+python3 test_quantum_hamiltonian.py
+# Output: ✅ ALL TESTS PASSED!
+```
+
+## Dependencies
+
+### Required
+- **Python**: 3.12+
+- **NumPy**: 2.3.4+ (matrix operations)
+- **SciPy**: 1.16.3+ (matrix exponential)
+
+### Installation
+```bash
+pip3 install numpy scipy
+```
+
+## Performance Characteristics
+
+### Scaling
+- **Matrix Size**: 2^n × 2^n for n qubits
+- **Recommended**: Up to 10-12 qubits on standard hardware
+- **Time Evolution**: O(2^(3n)) complexity via matrix exponential
+- **Energy Calculation**: O(2^(2n)) complexity
+
+### Optimizations
+- Matrix caching (recomputed only when Hamiltonian changes)
+- Efficient scipy.linalg.expm for time evolution
+- Lazy ground state computation
+
+### Benchmarks (4 qubits)
+- Hamiltonian matrix assembly: < 1ms
+- Energy calculation: < 1ms
+- Time evolution: ~2ms
+- Ground state computation: ~3ms
+- ML optimization iteration: ~10ms
+
+## Integration Points
+
+### Existing Systems
+The new Hamiltonian support integrates seamlessly with:
+1. **QuantumVirtualProcessor**: Core quantum simulation
+2. **quantum_mirror_firewall**: Quantum security infrastructure
+3. **Self-learning agents**: ML-guided quantum operations
+
+### Future Extensions
+Potential enhancements:
+- Variational Quantum Eigensolver (VQE)
+- Quantum Approximate Optimization Algorithm (QAOA)
+- Trotterized time evolution for larger systems
+- GPU acceleration
+- Noise models and error mitigation
+
+## Validation
+
+### Test Coverage
+- **Unit Tests**: 40+ tests covering all components
+- **Integration Tests**: Profile manager and processor integration
+- **Security Tests**: CodeQL scan (0 vulnerabilities)
+- **Performance Tests**: All operations complete in < 100ms
+
+### Validation Results
+- ✅ All mathematical operations verified against known results
+- ✅ Time evolution preserves normalization (||ψ|| = 1)
+- ✅ Ground state energies match expected values
+- ✅ ML optimization converges reliably
+- ✅ Profile switching preserves quantum state
+
+## Conclusion
+
+This implementation successfully adds comprehensive Hamiltonian support to Pandora's quantum interface. All requirements from the problem statement have been met with:
+
+- ✅ Robust, well-documented code
+- ✅ Comprehensive test coverage
+- ✅ Security-validated implementation
+- ✅ Integration with existing systems
+- ✅ Performance optimization
+- ✅ Extensive documentation
+
+The quantum profiles system is ready for production use and provides a solid foundation for advanced quantum machine learning applications.
+
+---
+
+**Implementation Date**: November 14, 2025  
+**Python Version**: 3.12.3  
+**Test Status**: All passing ✅  
+**Security Status**: 0 vulnerabilities ✅  
+**Documentation**: Complete ✅
+
+---
+
 # Empire Quantum Processor Profile - Implementation Summary
 
 ## Overview
@@ -307,7 +417,9 @@ result = empire.execute_addon("addon_name")
 
 ## Test Results
 ```
+============================================================
 Test Results: 12 passed, 0 failed
+============================================================
 ```
 
 ## Security Analysis
@@ -337,6 +449,9 @@ For an expanded Empire (3×4 grid, 8 control qubits):
 
 ## Conclusion
 The Empire quantum processor profile has been successfully implemented with all required features, comprehensive testing, and complete documentation. The implementation is robust, well-documented, and fully compatible with the existing Pandora quantum processor architecture.
+
+---
+
 # ML Quantum Integration - Implementation Summary
 
 ## Overview
@@ -494,7 +609,9 @@ stats = processor.get_addon_statistics()
 === Testing ML Integration with Custom Model ===
 ✓ All custom model integration tests passed!
 
+============================================================
 ✓ ALL TESTS PASSED!
+============================================================
 ```
 
 ### Security Check
@@ -619,6 +736,9 @@ The implementation is complete and ready for use. Profiles are now:
 ## Summary
 
 Successfully implemented on-the-fly machine learning quantum process logging and training for all standard quantum profiles in Pandora. The system is production-ready, well-tested, and fully documented.
+
+---
+
 # Pandora AIOS - Complete Implementation Summary
 
 ## Overview
@@ -801,109 +921,6 @@ This document summarizes the complete implementation of Pandora AIOS with all ne
 
 ## Usage Examples
 
-### Example 1: Basic Hamiltonian Operations
-See `demo_quantum_hamiltonian.py` for comprehensive demonstration including:
-- Creating and manipulating Hamiltonians
-- Computing energies and ground states
-- Time evolution
-- Profile comparison
-
-### Example 2: Security Integration
-See `example_quantum_security_integration.py` for:
-- Quantum random number generation
-- Encryption key derivation
-- Authentication token creation
-- Security profile comparison
-
-### Example 3: Running Tests
-```bash
-python3 test_quantum_hamiltonian.py
-# Output: ✅ ALL TESTS PASSED!
-```
-
-## Dependencies
-
-### Required
-- **Python**: 3.12+
-- **NumPy**: 2.3.4+ (matrix operations)
-- **SciPy**: 1.16.3+ (matrix exponential)
-
-### Installation
-```bash
-pip3 install numpy scipy
-```
-
-## Performance Characteristics
-
-### Scaling
-- **Matrix Size**: 2^n × 2^n for n qubits
-- **Recommended**: Up to 10-12 qubits on standard hardware
-- **Time Evolution**: O(2^(3n)) complexity via matrix exponential
-- **Energy Calculation**: O(2^(2n)) complexity
-
-### Optimizations
-- Matrix caching (recomputed only when Hamiltonian changes)
-- Efficient scipy.linalg.expm for time evolution
-- Lazy ground state computation
-
-### Benchmarks (4 qubits)
-- Hamiltonian matrix assembly: < 1ms
-- Energy calculation: < 1ms
-- Time evolution: ~2ms
-- Ground state computation: ~3ms
-- ML optimization iteration: ~10ms
-
-## Integration Points
-
-### Existing Systems
-The new Hamiltonian support integrates seamlessly with:
-1. **QuantumVirtualProcessor**: Core quantum simulation
-2. **quantum_mirror_firewall**: Quantum security infrastructure
-3. **Self-learning agents**: ML-guided quantum operations
-
-### Future Extensions
-Potential enhancements:
-- Variational Quantum Eigensolver (VQE)
-- Quantum Approximate Optimization Algorithm (QAOA)
-- Trotterized time evolution for larger systems
-- GPU acceleration
-- Noise models and error mitigation
-
-## Validation
-
-### Test Coverage
-- **Unit Tests**: 40+ tests covering all components
-- **Integration Tests**: Profile manager and processor integration
-- **Security Tests**: CodeQL scan (0 vulnerabilities)
-- **Performance Tests**: All operations complete in < 100ms
-
-### Validation Results
-- ✅ All mathematical operations verified against known results
-- ✅ Time evolution preserves normalization (||ψ|| = 1)
-- ✅ Ground state energies match expected values
-- ✅ ML optimization converges reliably
-- ✅ Profile switching preserves quantum state
-
-## Conclusion
-
-This implementation successfully adds comprehensive Hamiltonian support to Pandora's quantum interface. All requirements from the problem statement have been met with:
-
-- ✅ Robust, well-documented code
-- ✅ Comprehensive test coverage
-- ✅ Security-validated implementation
-- ✅ Integration with existing systems
-- ✅ Performance optimization
-- ✅ Extensive documentation
-
-The quantum profiles system is ready for production use and provides a solid foundation for advanced quantum machine learning applications.
-
----
-
-**Implementation Date**: November 14, 2025  
-**Python Version**: 3.12.3  
-**Test Status**: All passing ✅  
-**Security Status**: 0 vulnerabilities ✅  
-**Documentation**: Complete ✅
 ### Running Full Diagnostics
 ```bash
 python3 diagnostic_system.py --full --output report.json

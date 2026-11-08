@@ -389,6 +389,9 @@ Potential extensions to the framework:
 ## License
 
 Part of the Pandora AIOS project.
+
+---
+
 # Quantum Profiles Directory
 
 This directory provides an extensible framework for quantum processor profiles and add-ons in Pandora. You can easily add new quantum processor implementations, customize existing ones, or create add-ons to extend functionality.
@@ -664,6 +667,9 @@ print(f"Parallel results: {results}")
 ---
 
 **Note**: This is an extensible framework - feel free to experiment, create, and share your quantum processor profiles!
+
+---
+
 # Quantum Profiles
 
 This directory contains various quantum processor profiles that Pandora can dynamically select and switch between.
@@ -788,6 +794,27 @@ QUANTUM_PROFILES = {
     'myprofile': MyProfileProcessor,
 }
 ```
+
+## Testing
+
+Run the test suite:
+```bash
+python3 test_empire_quantum_processor.py
+```
+
+Run the demonstration:
+```bash
+python3 demo_empire_processor.py
+```
+
+## Compatibility
+
+All quantum processor profiles should be compatible with:
+- The base `QuantumVirtualProcessor` interface
+- Pandora's addon system
+- Dynamic configuration and runtime modification
+
+---
 
 # Quantum Profiles with ML Integration
 
@@ -1017,8 +1044,8 @@ ml_addon.clear_events()  # Clears all logged events and buffers
 
 All quantum profiles are designed to work with Pandora's profile manager and registry system. Each profile:
 
-1. Inherits from `QuantumVirtualProcessor`
-2. Defines an `ADDONS` list with `MLQuantumAddon(train_on_fly=True)`
+1. Builds on `QuantumVirtualProcessor`: Castle and Hive inherit from it, Empire runs one as its control lattice, and Alternative simulates its own qubit buffer
+2. Defines an `ADDONS` list with `partial(MLQuantumAddon, train_on_fly=True)`; each new processor calls every entry, so it gets its own addon
 3. Implements hook methods (`_before_gate_hooks`, `_after_gate_hooks`, etc.)
 4. Calls hooks before and after all quantum operations
 
@@ -1054,20 +1081,6 @@ See `examples_quantum_profiles.py` for comprehensive usage examples including:
 
 Run the test suite:
 ```bash
-python3 test_empire_quantum_processor.py
-```
-
-Run the demonstration:
-```bash
-python3 demo_empire_processor.py
-```
-
-## Compatibility
-
-All quantum processor profiles should be compatible with:
-- The base `QuantumVirtualProcessor` interface
-- Pandora's addon system
-- Dynamic configuration and runtime modification
 python3 test_quantum_profiles.py
 ```
 
