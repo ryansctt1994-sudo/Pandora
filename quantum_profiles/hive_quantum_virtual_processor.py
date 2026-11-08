@@ -14,6 +14,8 @@ A hive can stand alone or be one cell of an Empire's Kaleidoscopic Hive grid
 (see empire_quantum_virtual_processor), where hive_id is its (row, col).
 """
 
+from functools import partial
+
 from quantum_virtual_processor import QuantumVirtualProcessor
 from quantum_profiles.ml_quantum_addon import MLQuantumAddon
 
@@ -32,9 +34,11 @@ class HiveQuantumVirtualProcessor(QuantumVirtualProcessor):
         >>> stats = processor.get_addon_statistics()
     """
     
-    # Define addons list with ML quantum addon enabled by default
+    # Define addons list with ML quantum addon enabled by default.
+    # Each entry is called once per processor, so every processor gets its
+    # own addon (its own event log, training buffers and model).
     ADDONS = [
-        MLQuantumAddon(train_on_fly=True)
+        partial(MLQuantumAddon, train_on_fly=True)
     ]
     
     def __init__(self, qubits=8, hive_id=None, **kwargs):
@@ -50,7 +54,7 @@ class HiveQuantumVirtualProcessor(QuantumVirtualProcessor):
         self.hive_id = hive_id
 
         # Initialize addons
-        self.addons = [addon for addon in self.ADDONS]
+        self.addons = [make_addon() for make_addon in self.ADDONS]
         
         # Store processor context for addon hooks
         self._context = {

@@ -11,6 +11,8 @@ Philosophy:
 - Learns from all quantum operations for improved resilience
 """
 
+from functools import partial
+
 from quantum_virtual_processor import QuantumVirtualProcessor
 from quantum_profiles.ml_quantum_addon import MLQuantumAddon
 
@@ -29,9 +31,11 @@ class CastleQuantumVirtualProcessor(QuantumVirtualProcessor):
         >>> stats = processor.get_addon_statistics()
     """
     
-    # Define addons list with ML quantum addon enabled by default
+    # Define addons list with ML quantum addon enabled by default.
+    # Each entry is called once per processor, so every processor gets its
+    # own addon (its own event log, training buffers and model).
     ADDONS = [
-        MLQuantumAddon(train_on_fly=True)
+        partial(MLQuantumAddon, train_on_fly=True)
     ]
     
     def __init__(self, qubits=6, **kwargs):
@@ -45,7 +49,7 @@ class CastleQuantumVirtualProcessor(QuantumVirtualProcessor):
         super().__init__(qubits)
         
         # Initialize addons
-        self.addons = [addon for addon in self.ADDONS]
+        self.addons = [make_addon() for make_addon in self.ADDONS]
         
         # Store processor context for addon hooks
         self._context = {

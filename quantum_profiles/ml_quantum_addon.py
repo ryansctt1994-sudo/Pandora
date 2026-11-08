@@ -114,7 +114,8 @@ class MLQuantumAddon:
             ))
             self.logger.addHandler(handler)
     
-        self.logger.info(f"MLQuantumAddon initialized (train_on_fly={train_on_fly})")
+        # debug, not info: every processor and profile manager creates an addon
+        self.logger.debug(f"MLQuantumAddon initialized (train_on_fly={train_on_fly})")
     
     def attach_profile(self, profile) -> None:
         """
