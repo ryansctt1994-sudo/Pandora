@@ -1,6 +1,10 @@
 # Pandora AIOS
 
-An AI Computer Operating System - A lightweight, AI-powered operating system framework that demonstrates core OS concepts enhanced with AI capabilities.
+An educational AIOS simulation framework; not a production operating system or validated host security service.
+
+## Security status (current)
+
+**Pandora's experimental QuantumMirrorFirewall, AntiviralFirewall and FluidFirewall are disabled.** Earlier implementations could reset UFW or flush iptables chains, alter default networking policy, and run without validated scanner evidence. Their entrypoints now refuse operation before host firewall changes. The bundled privileged antivirus autostart installer is also disabled, and the scanner launcher no longer attempts automatic sudo service management. This repository does **not** provide verified malware protection. See [firewall quarantine](./security/FIREWALL_QUARANTINE.md).
 
 ## Overview
 
@@ -246,7 +250,7 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 - **Stoic AI Adviser**: Context-aware wisdom and guidance
 - **Quantum Virtual Processor**: Simulated quantum computing capabilities
 - **Calm Cache Optimizer**: LRU cache with expiration for smooth performance
-- **Security Framework**: Antiviral firewall and fluid security layers
+- **Security Framework**: Experimental security modules; not independently validated as protective controls
 - **Assimilation Portal**: Web-based interface for device integration
 - **GUI Control Panel**: Desktop application for system management
 
@@ -298,8 +302,8 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 
 ## On Boot
 
-- Antivirus and firewalls start before AIOS.
-- Pandora always runs safe by default; full orchestrator only starts if health checks pass.
+- There is no verified guarantee that antivirus or firewall protection starts on boot.
+- Do not rely on the experimental launcher or orchestrator as a host-security boundary.
 
 ## Components
 
@@ -313,9 +317,9 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 
 ### Security
 
-- **AntiviralFirewall**: UFW-based firewall with ClamAV integration
-- **FluidFirewall**: Adaptive security layer
-- **QuantumMirrorFirewall**: Advanced threat detection
+- **AntiviralFirewall**: Disabled/unverified; no UFW changes or automatic quarantine
+- **FluidFirewall**: Disabled/unverified; no iptables chain or default-policy changes
+- **QuantumMirrorFirewall**: Disabled/unverified; no host firewall changes permitted
 
 ### Utilities
 

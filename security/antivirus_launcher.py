@@ -48,12 +48,9 @@ def is_clamd_running():
         return False
 
 def try_start_clamd():
-    print("Attempting to start clamd service...")
-    try:
-        os.system("sudo systemctl start clamav-daemon || sudo service clamav-daemon start")
-        time.sleep(3)
-    except Exception:
-        pass
+    """Refuse implicit privilege escalation: daemon management belongs to OS admins."""
+    print("Automatic ClamAV service startup is disabled; configure it explicitly.")
+    return False
 
 def scan_path(target_path):
     if not pyclamd:
