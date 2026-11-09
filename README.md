@@ -1,6 +1,10 @@
 # Pandora AIOS
 
-An AI Computer Operating System - A lightweight, AI-powered operating system framework that demonstrates core OS concepts enhanced with AI capabilities.
+An educational AIOS simulation framework; not a production operating system or validated host security service.
+
+## Security status (current)
+
+**The experimental QuantumMirrorFirewall is disabled.** Its scanner dependency `security.av_engine` is absent; its earlier implementation could reset host UFW rules and used simulated, unsuitable randomness for port selection. The entrypoints now refuse operation without running host firewall commands. This repository does **not** provide verified malware protection. See [firewall quarantine](./security/FIREWALL_QUARANTINE.md).
 
 ## Overview
 
@@ -246,7 +250,7 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 - **Stoic AI Adviser**: Context-aware wisdom and guidance
 - **Quantum Virtual Processor**: Simulated quantum computing capabilities
 - **Calm Cache Optimizer**: LRU cache with expiration for smooth performance
-- **Security Framework**: Antiviral firewall and fluid security layers
+- **Security Framework**: Experimental security modules; not independently validated as protective controls
 - **Assimilation Portal**: Web-based interface for device integration
 - **GUI Control Panel**: Desktop application for system management
 
@@ -298,8 +302,8 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 
 ## On Boot
 
-- Antivirus and firewalls start before AIOS.
-- Pandora always runs safe by default; full orchestrator only starts if health checks pass.
+- There is no verified guarantee that antivirus or firewall protection starts on boot.
+- Do not rely on the experimental launcher or orchestrator as a host-security boundary.
 
 ## Components
 
@@ -313,9 +317,9 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 
 ### Security
 
-- **AntiviralFirewall**: UFW-based firewall with ClamAV integration
-- **FluidFirewall**: Adaptive security layer
-- **QuantumMirrorFirewall**: Advanced threat detection
+- **AntiviralFirewall**: Experimental UFW/ClamAV integration; not validated as malware protection
+- **FluidFirewall**: Experimental adaptive security concept
+- **QuantumMirrorFirewall**: Disabled/unverified; no host firewall changes permitted
 
 ### Utilities
 
