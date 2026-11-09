@@ -4,7 +4,7 @@ An educational AIOS simulation framework; not a production operating system or v
 
 ## Security status (current)
 
-**The experimental QuantumMirrorFirewall is disabled.** Its scanner dependency `security.av_engine` is absent; its earlier implementation could reset host UFW rules and used simulated, unsuitable randomness for port selection. The entrypoints now refuse operation without running host firewall commands. This repository does **not** provide verified malware protection. See [firewall quarantine](./security/FIREWALL_QUARANTINE.md).
+**Pandora's experimental QuantumMirrorFirewall, AntiviralFirewall and FluidFirewall are disabled.** Earlier implementations could reset UFW or flush iptables chains, alter default networking policy, and run without validated scanner evidence. Their entrypoints now refuse operation before host firewall changes. The bundled privileged antivirus autostart installer is also disabled, and the scanner launcher no longer attempts automatic sudo service management. This repository does **not** provide verified malware protection. See [firewall quarantine](./security/FIREWALL_QUARANTINE.md).
 
 ## Overview
 
@@ -317,8 +317,8 @@ Pandora AIOS is an AI Operating System built with stoic philosophy at its core. 
 
 ### Security
 
-- **AntiviralFirewall**: Experimental UFW/ClamAV integration; not validated as malware protection
-- **FluidFirewall**: Experimental adaptive security concept
+- **AntiviralFirewall**: Disabled/unverified; no UFW changes or automatic quarantine
+- **FluidFirewall**: Disabled/unverified; no iptables chain or default-policy changes
 - **QuantumMirrorFirewall**: Disabled/unverified; no host firewall changes permitted
 
 ### Utilities
