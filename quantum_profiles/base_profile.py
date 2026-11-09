@@ -110,18 +110,25 @@ class BaseQuantumProfile:
         Args:
             state (np.ndarray): New state vector (must be normalized)
         """
-        if state.shape[0] != 2 ** self.n_qubits:
+        try:
+            state = np.asarray(state, dtype=complex)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("State must be a complex-valued vector.") from exc
+
+        dimension = 2 ** self.n_qubits
+        if state.ndim != 1 or state.shape[0] != dimension:
             raise ValueError(
-                f"State dimension ({state.shape[0]}) must match "
-                f"Hilbert space dimension ({2 ** self.n_qubits})"
+                f"State must be a one-dimensional vector of length {dimension}."
             )
-        
-        # Normalize if not already normalized
+        if not np.all(np.isfinite(state)):
+            raise ValueError("State amplitudes must be finite.")
+
         norm = np.linalg.norm(state)
-        if not np.isclose(norm, 1.0):
-            state = state / norm
-        
-        self.state = state
+        if not np.isfinite(norm) or norm <= 0:
+            raise ValueError("Zero-norm or invalid quantum state cannot be normalized.")
+
+        # Normalize and detach from caller-owned storage.
+        self.state = np.array(state / norm, dtype=complex, copy=True)
     
     def get_ground_state(self) -> Tuple[float, np.ndarray]:
         """
