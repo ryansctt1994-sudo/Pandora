@@ -1,15 +1,24 @@
-"""
-Pandora Quantum Mirror Firewall AI
-- Quantum-randomized dynamic firewall and AV scanning
-- Recursive weakness analysis: each layer audits and proposes improvements for itself and other layers (ML-over-ML, “infinite mirror” principle)
-- Each quantum cycle, ML troubleshooter re-learns and re-optimizes firewall and troubleshooting logic.
+"""Experimental Pandora firewall prototype: DISABLED / NOT A SECURITY CONTROL.
+
+The scanner dependency is absent, the quantum-port mechanism does not provide
+security entropy, and the old cycle reset host UFW policy without authorization.
+The entrypoints below now fail closed with no host firewall mutation.
+Do not enable without an independently reviewed, tested replacement.
 """
 
 import os, subprocess, threading, time, random, logging, queue, sys
 
 # Assume quantum processor interface provided:
 from quantum_virtual_processor import QuantumVirtualProcessor
-from security.av_engine import scan_with_all, any_infected
+try:
+    from security.av_engine import scan_with_all, any_infected
+except ModuleNotFoundError as exc:
+    if exc.name not in ("security", "security.av_engine"):
+        raise
+    scan_with_all = None
+    any_infected = None
+
+SECURITY_STATUS = "DISABLED_UNVERIFIED"
 
 try:
     from inotify_simple import INotify, flags
@@ -53,12 +62,8 @@ class QuantumRandomizer:
         self.processor = QuantumVirtualProcessor(qubits=bits)
         self.last_entropy = 0
     def quantum_port(self):
-        # Each measurement, reapply Hadamard to increase unpredictability
-        self.processor.apply_gate("H", 0)
-        entropy = self.processor.measure()
-        self.last_entropy = entropy
-        port = 4000 + (entropy % 60000)
-        return port
+        """Disabled: simulated quantum output is not suitable for security ports."""
+        raise RuntimeError("Quantum port generation is disabled: not a security RNG.")
     def meta_audit(self, action=None):
         # ML-over-ML: Detect bias, poor entropy, or vulnerabilities in this randomizer
         report = []
@@ -82,18 +87,11 @@ class QuantumMirrorFirewallObserver:
     def log(self, msg):
         log(f"[QFWObs] {msg}")
     def quantum_firewall_cycle(self):
-        # Each cycle: use quantum randomness for port randomization
-        ports = [self.q_random.quantum_port() for _ in range(3)]
-        subprocess.run(['ufw', 'reset'], check=False)
-        subprocess.run(['ufw', 'default', 'deny'], check=False)
-        for port in ports:
-            subprocess.run(['ufw', 'allow', str(port)], check=False)
-        subprocess.run(['ufw', 'reload'], check=False)
-        self.log(f"Quantum-selected ports: {ports}")
-        # Run meta-auditor (recursive mirror improvement)
-        issues = self.mirror_auditor.audit()
-        if issues:
-            self.mirror_auditor.improve()
+        """Fail closed before attempting any host-network configuration."""
+        raise RuntimeError(
+            "Pandora firewall is disabled pending security review; "
+            "no host firewall rules have been modified."
+        )
     def forensic_monitor(self):
         if INotify is None:
             self.log("inotify_simple not available, real-time filesystem protection disabled.")
@@ -124,12 +122,10 @@ class QuantumMirrorFirewallObserver:
             except Exception as e:
                 self.log(f"Scanner error: {e}")
     def start(self):
-        self.log("QuantumMirrorFirewall starting threads...")
-        threading.Thread(target=self.forensic_monitor, daemon=True).start()
-        threading.Thread(target=self.scan_worker, daemon=True).start()
-        while not self.stop.is_set():
-            self.quantum_firewall_cycle()
-            time.sleep(120)  # Firewall quantum update cycle (2 minutes)
+        """Do not spawn watchers or mutate networking from an unverified prototype."""
+        raise RuntimeError(
+            "Pandora firewall is disabled pending scanner and networking review."
+        )
     def stopit(self):
         self.stop.set()
 
