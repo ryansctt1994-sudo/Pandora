@@ -122,8 +122,8 @@ class QuantumVirtualProcessor:
         Raises:
             ValueError: If the qubit index is out of range or the gate is unknown
         """
-        if reg >= self.qubits:
-            raise ValueError(f"Qubit index {reg} out of range (max: {self.qubits-1})")
+        if reg < 0 or reg >= self.qubits:
+            raise ValueError(f"Qubit index {reg} out of range (valid: 0..{self.qubits-1})")
         self._ensure_register_size()
         
         gate = gate.upper()
@@ -146,7 +146,7 @@ class QuantumVirtualProcessor:
     
     def entangle(self, qubit1, qubit2):
         """Create entanglement between two qubits (simplified)"""
-        if qubit1 >= self.qubits or qubit2 >= self.qubits:
+        if not (0 <= qubit1 < self.qubits and 0 <= qubit2 < self.qubits):
             raise ValueError("Qubit indices out of range")
         self._ensure_register_size()
         
@@ -167,7 +167,7 @@ class QuantumVirtualProcessor:
         """
         if qubit_index is not None:
             # Measure specific qubit of the classical register
-            if qubit_index >= self.qubits:
+            if qubit_index < 0 or qubit_index >= self.qubits:
                 raise ValueError(f"Qubit index {qubit_index} out of range")
             self._ensure_register_size()
             result = self.state[qubit_index]
@@ -196,7 +196,7 @@ class QuantumVirtualProcessor:
         }
     
     def quantum_random_number(self, bits=8):
-        """Generate truly random number using quantum uncertainty"""
+        """Return simulated pseudorandom bits; not for cryptographic or security use."""
         result = 0
         for i in range(min(bits, self.qubits)):
             self.apply_gate('H', i)  # Put in superposition
