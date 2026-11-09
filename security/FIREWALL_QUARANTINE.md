@@ -1,6 +1,10 @@
-# QuantumMirrorFirewall — quarantine status
+# Pandora experimental firewall quarantine
 
-**Status: DISABLED_UNVERIFIED.** This module is a research prototype, not an
+**Status: DISABLED_UNVERIFIED.** The three experimental firewall classes
+(`QuantumMirrorFirewallObserver`, `AntiviralFirewall` and `FluidFirewall`)
+are disabled and must not be used as host security controls.
+
+This module is a research prototype, not an
 antivirus, firewall, security entropy source, or supported deployment target.
 
 ## Why it is quarantined
@@ -15,14 +19,33 @@ antivirus, firewall, security entropy source, or supported deployment target.
 - The earlier recursion/monitoring claims have not been shown to provide malware
   detection or reliable self-repair.
 
+## Additional host-side risks identified
+
+- `security/antiviral_firewall.py` formerly enabled UFW and changed its
+  default policy during construction. Its constructor, scanning, quarantine
+  and lockdown entrypoints now refuse execution.
+- `security/fluid_firewall.py` formerly flushed iptables INPUT/OUTPUT chains,
+  randomly selected ports, and changed default DROP/ACCEPT rules. The
+  constructor, start, rule-modification, freeze and shutdown entrypoints
+  now refuse execution.
+- `security/launch_av_on_boot.sh` formerly installed/started privileged
+  systemd services. It now exits nonzero without modifying the host.
+- `security/antivirus_launcher.py` no longer attempts automatic
+  `sudo systemctl` or `sudo service` starts. Manual read-only ClamAV
+  scanning is not validated as continuous malware protection.
+
 ## Enforced boundary
 
-The following entrypoints now fail with `RuntimeError` before any host firewall
+The following quantum-firewall entrypoints fail with `RuntimeError` before any host firewall
 mutation, thread start, or simulated security-port generation:
 
 - `QuantumMirrorFirewallObserver.start()`
 - `QuantumMirrorFirewallObserver.quantum_firewall_cycle()`
 - `QuantumRandomizer.quantum_port()`
+
+The other disabled firewall classes also refuse construction, direct rule
+changes, shutdown and lockdown requests. No old network-modification commands
+are retained as callable fallback paths.
 
 The missing scanner import is caught only to allow inspection and testing of
 the quarantine. **No fallback scanner or security function is supplied.**
