@@ -27,10 +27,13 @@ def verify(junit_path: Path) -> dict[str, object]:
             f"skipped={skipped}, failed={failed}, errors={errored}"
         )
 
+    # Running this verifier by filename places .github/scripts on sys.path,
+    # unlike pytest which adds the checkout root. Include the root explicitly.
+    repository_root = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(repository_root))
     import ouroboros_sync  # noqa: PLC0415 - import after native build only
 
     native_path = Path(ouroboros_sync.__file__).resolve()
-    repository_root = Path(__file__).resolve().parents[2]
     if not native_path.is_relative_to(repository_root):
         raise ValueError(f"native extension imported from outside checkout: {native_path}")
 
