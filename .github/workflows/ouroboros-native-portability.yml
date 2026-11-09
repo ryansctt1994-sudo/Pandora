@@ -23,6 +23,9 @@ jobs:
     env:
       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
       PYTHONDONTWRITEBYTECODE: "1"
+      # Windows console default code pages cannot print the build script's
+      # Unicode success marker despite a successful native extension import.
+      PYTHONIOENCODING: "utf-8"
 
     steps:
       - name: Checkout (does not modify tracked binary)
@@ -43,6 +46,12 @@ jobs:
           rustc --version
           bash --version | head -1
           python3 --version
+
+      - name: Configure macOS dynamic Python symbol lookup
+        # PyO3 cdylib linking leaves Python C-API symbols to the interpreter.
+        # Only the CI environment changes; the repository build script does not.
+        if: runner.os == 'macOS'
+        run: echo 'RUSTFLAGS=-C link-arg=-undefined -C link-arg=dynamic_lookup' >> "$GITHUB_ENV"
 
       - name: Build native extension using existing repository script
         run: bash build_ouroboros_sync.sh
