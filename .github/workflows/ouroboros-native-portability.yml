@@ -1,0 +1,76 @@
+name: Ouroboros Sync Native Portability (review only)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-portability:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        python-version: ["3.12", "3.13"]
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      # Windows console default code pages cannot print the build script's
+      # Unicode success marker despite a successful native extension import.
+      PYTHONIOENCODING: "utf-8"
+
+    steps:
+      - name: Checkout (does not modify tracked binary)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Record build environment
+        run: |
+          python --version
+          cargo --version
+          rustc --version
+          bash --version | head -1
+          python3 --version
+
+      - name: Configure macOS dynamic Python symbol lookup
+        # PyO3 cdylib linking leaves Python C-API symbols to the interpreter.
+        # Only the CI environment changes; the repository build script does not.
+        if: runner.os == 'macOS'
+        run: echo 'RUSTFLAGS=-C link-arg=-undefined -C link-arg=dynamic_lookup' >> "$GITHUB_ENV"
+
+      - name: Build native extension using existing repository script
+        run: bash build_ouroboros_sync.sh
+
+      - name: Install offline-test runner
+        run: python -m pip install "pytest>=8,<9"
+
+      - name: Run all Ouroboros Sync tests without accepting skips
+        run: python -m pytest -q -rs test_ouroboros_sync.py --junitxml=ouroboros-portability.xml
+
+      - name: Require 14 executed cases and fresh platform-native import
+        run: python .github/scripts/verify_ouroboros_portability.py ouroboros-portability.xml
+
+      - name: Retain test evidence even when tests fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ouroboros-native-${{ matrix.os }}-py${{ matrix.python-version }}
+          if-no-files-found: warn
+          path: |
+            ouroboros-portability.xml
+            ouroboros-portability-receipt.json
