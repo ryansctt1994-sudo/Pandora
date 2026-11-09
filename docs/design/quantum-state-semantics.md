@@ -59,8 +59,10 @@
 | `QuantumRandomizer.quantum_port()` in `security/quantum_mirror_firewall.py` | Calls `apply_gate("H", 0)`, then `measure()` with no argument | The `H` has no effect on the value returned |
 | `demo.py` | Prints `get_state_vector()` (register) and `quantum_random_number()` | Demonstrated output reflects the register only |
 | ML addon (`quantum_profiles/ml_quantum_addon.py`) | Logs gate and measurement events | Its training data inherits the split |
-| `expand_qubits` / `expand_control_lattice` | Increase the qubit count | [Open] Whether the profile state is resized is not verified |
-| Randomness reproducibility | `np.random` global generator, unseeded | Measurement outcomes cannot be asserted exactly in tests |
+| `expand_qubits` (Castle, Hive) | Increases `qubits`; the profile state keeps its original dimension (verified, Appendix A) | After expanding 3 → 5 qubits, `measure()` can only return outcomes 0–7, so the added qubits are never measured |
+| `expand_control_lattice` (Empire) | Replaces the control lattice with a new processor of the larger size | Not separately checked; the old state is discarded rather than extended |
+| Measurement collapse | `measure()` samples the profile state without changing it (verified, Appendix A) | Repeated measurements are independent draws from one distribution |
+| Randomness reproducibility | `np.random` global generator, unseeded by default. Seeding the global generator makes outcomes repeatable within one process (verified, Appendix A) | Tests must seed global state; there is no per-processor generator |
 
 ---
 
@@ -77,7 +79,11 @@
 | One authoritative state vector should replace both models | Proposed |
 | The contract in section 5 | Proposed |
 | `entangle` should become a real two-qubit gate or be removed | Proposed |
+| Hamiltonian time evolution preserves normalization (all five profiles, 3 qubits) | Established (Appendix A) |
+| `expand_qubits` does not resize the profile state | Established (Appendix A) |
+| `measure()` does not collapse the profile state | Established (Appendix A) |
 | `expand_qubits` should extend the state with `|0⟩` ancillas | Proposed, with [Open] status |
+| `measure()` should collapse the state (contract item 3) | Proposed. This changes current behavior, see section 6 |
 | `Alternative` should share the common state | [Open] |
 
 ---
@@ -108,6 +114,8 @@
 - `demo.py` and `examples_quantum_profiles.py`, which call `apply_gate` and `measure` on each profile.
 - Tests: `test_quantum_hamiltonian.py` (26 tests), `test_empire_quantum_processor.py` (12), `test_quantum_profiles.py` (7). Their measurement expectations will need review, not only relaxation.
 - Processor-specific buffers in `Alternative`, and the ML addon's event log.
+
+[Established] `measure()` does not collapse the profile state today. Contract item 3 would make it collapse, so any caller that measures repeatedly and expects independent draws from an unchanged state would see different results.
 
 [Open] Whether to keep a deprecated classical-register view, or remove it.
 
@@ -176,10 +184,11 @@ For any future implementation PR, not for this one:
 
 1. Should `Alternative` adopt the common state vector, or remain a separate, explicitly non-quantum model under a different name?
 2. Should the classical register survive as a deprecated view, or be removed?
-3. How should `expand_qubits` extend the state? Tensor with `|0⟩` ancillas is the candidate.
+3. How should `expand_qubits` extend the state? Today it does not extend it at all (Appendix A). Tensor with `|0⟩` ancillas is the candidate.
 4. Should `entangle` become a real two-qubit gate, or be removed?
 5. Owner decision on the firewall: recover `av_engine.py` from its author, or mark the module non-functional.
-6. Does the Hamiltonian evolution (`time_evolution`) preserve normalization? Not yet verified.
+6. ~~Does the Hamiltonian evolution (`time_evolution`) preserve normalization?~~ Answered: yes, within `3.8e-15`, for all five profiles at 3 qubits (Appendix A). Larger qubit counts are not yet checked.
+7. Should `measure()` collapse the state, as the contract proposes, given that it does not today?
 
 ---
 
@@ -208,3 +217,19 @@ Evidence checklist for the eventual implementation PR:
 - [ ] Compatibility list (section 6) reviewed against the implementation diff
 - [ ] Security documentation (section 7) reviewed
 - [ ] Firewall status (section 8) re-checked
+
+---
+
+## Appendix A: verification log
+
+Read-only checks against the code at `55a4c61` (unchanged on this branch). Python 3.12.3, NumPy 2.5.4, run on 2026-11-09 in a Linux container. No code was modified to run them.
+
+| Check | Method | Result |
+|---|---|---|
+| Gates leave the profile state unchanged | 3-qubit `alternative` processor; `apply_gate` with `X`, `H`, `Y` on qubit 0; compare `profile_manager.get_state()` before and after | Unchanged (`np.array_equal` is `True`) |
+| Time evolution preserves normalization | `QuantumProfileManager(n_qubits=3)` for each of `alternative`, `castle`, `hive`, `empire`, `omega`; `time_evolution(t)` for t = 0.1, 0.7, 2.0, 10.0 in sequence; `abs(norm - 1)` | Largest deviation `3.77e-15` (empire). All five Hamiltonian matrices are Hermitian |
+| `expand_qubits` resizes the profile state | Castle and Hive processors with 3 qubits; `expand_qubits(2)`; compare state dimension | `qubits` 3 → 5; state dimension stays 8; classical register stays length 3 until a gate touches a new index |
+| Seeded reproducibility | `np.random.seed(7)`, build a 3-qubit processor, `time_evolve(0.9)`, 20 × `measure()`; repeat | Identical outcome lists. Not checked across processes, platforms or Python versions |
+| Measurement collapse | 3-qubit processor; `time_evolve(0.9)`; `measure()`; compare state before and after | State unchanged: no collapse |
+
+These results describe current behavior. They are not acceptance tests for the proposed contract, which still need to be written (section 9).
